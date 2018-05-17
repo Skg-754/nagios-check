@@ -4,7 +4,7 @@
 #
 #   File :          check_folder_active.py
 #   Description :   Nagios plugin to check if files are being updated in a directory
-#   Langage :       GNU Bourne-Again SHell
+#   Langage :       Python3
 #   Date :          2018-05-09
 #   Author :        Skg-754
 #

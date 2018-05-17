@@ -18,6 +18,7 @@ import sys
 
 desc='''
 	Nagios script to check ipmi sensors 
+	Depedencies : ipmitool
 '''
 
 parser = argparse.ArgumentParser(description=desc)
