@@ -3,9 +3,9 @@
 ####################################
 #
 #   File : 	    check_ipmi_simple.py
-#   Description :   
-#   Langage :       GNU Bourne-Again SHell
-#   Date :          
+#   Description :   Nagios check script to check ipmi sensors
+#   Langage :       Python3
+#   Date :	    2018-05-17
 #   Author :        Skg-754
 #
 #####################################
@@ -17,6 +17,7 @@ import os.path
 import sys
 
 desc='''
+	Nagios script to check ipmi sensors 
 '''
 
 parser = argparse.ArgumentParser(description=desc)
