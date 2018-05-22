@@ -80,16 +80,24 @@ if shortcut :
 	if verbose : 
 		print(request)
 	result = subprocess.Popen(request, shell=True, stdout=subprocess.PIPE).stdout.read()
-	resultArray = str(result).split('|')
+	resultArray = result.decode('utf-8').split('|')
 	if len(resultArray) == 3 :
+		
 		fullPath = resultArray[-1]
 		if verbose :
 			print(fullPath)
 		drive = fullPath[0:2]
-		path = fullPath[2:-3]+'\\\\'
+		print(drive)
+		print(fullPath[2:-1])
+		path = fullPath[2:-1].replace('\\','\\\\')+'\\\\'
+		print(path)
 		userFriendlyPath = path.replace('\\\\','/')
 	else : 
-		statusInformation = 'Error : Shortcut file not found or WMI error'
+		firstResult = resultArray[0]
+		if firstResult.find('ERROR') :
+			statusInformation = 'wmi error : {}'.format(firstResult)
+		else :
+			statusInformation = 'Error : Shortcut file not found'
 		perfData = "'isActive'=0"
 		statusCode = nagiosStatusCode['UNKNOWN']
 		
@@ -110,18 +118,19 @@ if verbose :
 result1 = subprocess.Popen(request, shell=True, stdout=subprocess.PIPE).stdout.read()
 
 if verbose : 
-	print(result1)
+	print(result1.decode('utf-8'))
 
 # execution of the wmi command for the second time
 result2 = subprocess.Popen(request, shell=True, stdout=subprocess.PIPE).stdout.read()
 
 if verbose :
-	print(result2)
+	print(result2.decode('utf-8'))
 
 # comparison of the two results
-if result1 == result2 :	
-	if str(result1).find('ERROR: Retrieve result data.') : 
-		statusInformation = 'WMI error, unable to request the folder : {}'.format(str(result1))
+if result1 == result2 :
+	result1 = result1.decode('utf-8')	
+	if result1.find('ERROR: Retrieve result data.') : 
+		statusInformation = 'WMI error, unable to request the folder : {}'.format(result1)
 		perfData = "'isActive'=0"
 		statusCode = nagiosStatusCode['UNKNOWN']
 	else :
