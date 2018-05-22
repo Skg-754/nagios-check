@@ -87,10 +87,7 @@ if shortcut :
 		if verbose :
 			print(fullPath)
 		drive = fullPath[0:2]
-		print(drive)
-		print(fullPath[2:-1])
 		path = fullPath[2:-1].replace('\\','\\\\')+'\\\\'
-		print(path)
 		userFriendlyPath = path.replace('\\\\','/')
 	else : 
 		firstResult = resultArray[0]
