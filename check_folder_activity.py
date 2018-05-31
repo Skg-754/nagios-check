@@ -1,8 +1,9 @@
 #!/bin/python3
 
+
 #####################################
 #
-#   File :          check_folder_active.py
+#   File :          check_folder_activity.py
 #   Description :   Nagios plugin to check if files are being updated in a directory
 #   Langage :       Python3
 #   Date :          2018-05-09
@@ -89,9 +90,14 @@ def wmiErrorAnalysis (stderr) :
 		'0x8007000e' : 'Not enough storage is available to complete this operation',
 		'0x80010108' : 'The object invoked has disconnected from its clients.',
 		'0x800705af' : 'The paging file is too small for this operation to complete.',
-		'0x80010111' : 'Unknown error',
+		'0x80010111' : 'OLE received a packet with an invalid header.',
+		'0x800700a4' : 'No more threads can be created in the system.',
 		'0xc002001b' : 'WMI Timeout error',
-		'0x80041013' : 'Provider Load Failure'
+		'0x80041013' : 'Provider Load Failure',
+		'0x80041033' : 'WMI Service shutting down',
+		'0x80070005' : 'General access denied error (incorrect login)',
+		'0x80041004' : 'Provider Failure',
+		'0x80041006' : 'Out Of Memory'
 	}	
 
 	errorCode = stderr.decode('utf-8')[18:28]
