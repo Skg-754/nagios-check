@@ -296,6 +296,9 @@ if mode == 'GENERAL' :
 	if warningEventNb == 0 and errorEventNb == 0 and criticalEventNb == 0 : 
 		statusCode = nagiosStatusCode['OK']
 		statusInformation = '{} ok : {} devices, {} enclosures and {} players checked'.format(host, len(devices), len(enclosures), len(players))	
+	else :
+		statusInformation = '{} Not okay : {} devices, {} enclosures and {} players checked _ {} warning, {} errors and {} criticals event'.format(host, len(devices), len(enclosures), len(players), warningEventNb, errorEventNb, criticalEventNb)
+
 
 # # # # # # # # # 
 # MEDIADIR MODE
