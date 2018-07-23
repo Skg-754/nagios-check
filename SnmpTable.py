@@ -1,22 +1,26 @@
 from utils import processExec, parseSnmpSingleResult
-
+import os
 
 class SnmpTable :
 	'''
+	
 	'''
 	def __init__(self, host, community, tableOid) :
 		'''
+		Required arguments : snmp host, snmp community, table oid on format mibFile::TableName
 		'''
-		self.host = host
-		self.community = community
-		self.tableOid = tableOid
-		self.isValid = False
-		self.columns = []
-		self.mib = None	
-		self.indexes = []
-		self.values = {}
-		# transform tableOid innumercialOId
-		request = 'snmptranslate -On {}'.format(self.tableOid)
+		self.host = host						# snmp host
+		self.community = community					# snmp community
+		self.tableOid = tableOid					# table string oid on format mibFile::TableName
+		self.isValid = False						# variable set to true if the oid string is found
+		self.columns = []						# columns names of the snmp table
+		self.mib = None							# the mib file name 
+		self.indexes = []						# the indexes of the snmp table
+		self.values = {}						# the values collected from the snmp table
+		self.verbose = False						# if set to true, print the requests sended to the snmp host
+		
+		# transform tableOid in numercialOId	
+		request = 'snmptranslate -On {}'.format(self.tableOid)	
 		returnCode, returnMessage = processExec(request)
 		if returnCode != 0 : 
 			print('Error while checking the snmp table oid string.')
@@ -26,8 +30,11 @@ class SnmpTable :
 
 	def getIndexes (self) :
 		'''
+		Collect the table indexes and store it the indexes array
 		'''
 		request = 'snmpwalk -v 2c -c {} {} {}.1.1'.format(self.community, self.host, self.tableOid)
+		if self.verbose : 
+			print(request)
 		returnCode, returnMessage = processExec(request)
 		if returnCode != 0 :
 			print('error')
@@ -40,16 +47,20 @@ class SnmpTable :
 	
 	def listIndexes (self) : 
 		'''
+		Print the indexes list
 		'''
 		for index in self.indexes : 
 			print(index)
 
 	def getColumns (self) :
 		'''
+		Collect columns names and stores it in the columns array
 		'''
 		crtColumn = 1
 		def loop (crtColumn) :
 			request = 'snmpgetnext -v 2c -On -c {} {} {}.1.{}'.format(self.community, self.host, self.tableOid, crtColumn)
+			if self.verbose : 
+				print(request)
 			returnCode, returnMessage = processExec(request)
 			if returnCode != 0 :
 				print('error')
@@ -68,12 +79,14 @@ class SnmpTable :
 
 	def listColumns (self) :
 		'''
+		Prin the columns name list
 		'''
 		for column in self.columns : 
 			print(column)
 
 	def getColumnVals (self, column) : 
 		'''
+		Collect the values for a specific column and store it in the values table
 		'''
 		request = 'snmpwalk -v 2c -c {} {} {}::{}'.format(self.community, self.host, self.mib, column)
 		returnCode, returnMessage = processExec(request)
@@ -91,14 +104,23 @@ class SnmpTable :
 
 	
 	def getAllVals (self) :
+		'''
+		Collect the values of all columns
+		'''
 		for col in self.columns : 
 			self.getColumnVals(col)	
 
 	def getCollectedValues (self) : 
+		'''
+		Return the collected values array
+		'''
 		return self.values
 
 	def displayValues (self) : 
-		headers= list(list(self.values.values())[0].keys());
+		'''
+		Print the collected values in a formatted array
+		'''
+		headers= list(list(self.values.values())[0].keys())
 		
 		valuesList = list(self.values.values())
 		columnsWidth = {}
@@ -134,4 +156,44 @@ class SnmpTable :
 		
 		# building line
 		print(''.ljust(len(headerString),'-'))
+
+	def csvValues (self, fileName) :
+		'''
+		Export de values to a csv file
+		'''
+		headers= list(list(self.values.values())[0].keys());
+		valuesList = list(self.values.values())
+		
+		csvFile = open(fileName, 'w')
+			
+		# building the header
+		headerString = ''
+		for header in headers :
+			headerString = '{}{};'.format(headerString, header)
+		if self.verbose :
+			print(headerString)
+		csvFile.write(headerString+os.linesep)
+
+		# writing the datas
+				
+		for value in valuesList : 
+			line = ''
+			for key,val in value.items() :
+				line = '{}{};'.format(line, val)
+			if self.verbose :	
+				print(line)	
+			csvFile.write(line+os.linesep)
+
+	def nagiosValues (self) : 
+		'''
+		Export values as nagios perfdata output
+		'''
+		perfData = 'TablePerfData | '
+		headers= list(list(self.values.values())[0].keys())
+		for key,data in self.values.items() : 
+			for oid,val in data.items() :
+				perfData = "{} '{}_{}'='{}'".format(perfData, oid,key,val) 
+		print(perfData)
+		
+
 
