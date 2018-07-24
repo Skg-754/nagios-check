@@ -70,7 +70,9 @@ class SnmpTable :
 				result = parseSnmpSingleResult(returnMessage)
 				if self.numericalOid in result['columnOid'] :
 					crtColumn+=1
-					request = 'snmptranslate -To {}'.format(result['columnOid'])
+					request = 'snmptranslate -To {} -m ALL'.format(result['columnOid'])
+					if self.verbose :
+						print(request)
 					returnCode, returnMessage = processExec(request)
 					strOid = returnMessage.split('\n')[0].split('.')[:-1][0]
 					if self.mib == None :
