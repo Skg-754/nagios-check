@@ -14,7 +14,7 @@
 from SnmpTable import *
 
 import argparse
-
+import json
 desc = '''
 '''
 
@@ -31,6 +31,8 @@ parser.add_argument('-v',	'--verbose',		dest='verbose',			action='store_true',		
 
 # COLLECT OPTIONS
 parser.add_argument('-cc', 	'--collect-columns',	dest='columns',			default=[], nargs='*',		help='Columns to be collected, by default all')
+parser.add_argument('-cs',	'--collect-search',	dest='linesFilter',		default=False,			help='Filter for the lines to be collected according to a json dump file give in argument')
+parser.add_argument('-if',	'--index-file',		dest='indexFile',		default=False,			help='Use this file to send commands instead of collecting all indexes of the table')
 
 # PRINT OPTIONS
 parser.add_argument('-pc',	'--print-columns',	dest='printColumns',		action='store_true',		help='Print the columns list')
@@ -38,8 +40,9 @@ parser.add_argument('-pi', 	'--print-indexes',	dest='printIndexes',		action='sto
 
 # OUTPUT OPTIONS
 parser.add_argument('-op',	'--output-print',	dest='outputPrint',		action='store_true',		help='print the collected datas in the terminal')
-parser.add_argument('-oc',	'--output-csv',		dest='outputCsv',		default=False,			help='store the collected datas in a csv file with the name given ad argument')
+parser.add_argument('-oc',	'--output-csv',		dest='outputCsv',		default=False,			help='store the collected datas in a csv file with the name given as argument')
 parser.add_argument('-on', 	'--output-nagios',	dest='outputNagios',		action='store_true',		help='print a nagios formatted perfdata output of the selected data')
+parser.add_argument('-oj',	'--output-json',	dest='outputJson',		default=False,			help='store the collected datas as a json dump file with the name given as argument')
 
 args = parser.parse_args()
 
@@ -48,15 +51,18 @@ community	= args.community
 mibFile		= args.mibFile
 tableOid	= args.tableOid
 verbose 	= args.verbose
+indexFile 	= args.indexFile
+indexData	= None
 
 columns 	= args.columns
+lines		= []
 printColumns 	= args.printColumns
 printIndexes	= args.printIndexes
 
 outputPrint 	= args.outputPrint
 outputCsv	= args.outputCsv
 outputNagios	= args.outputNagios
-
+outputJson	= args.outputJson
 
 if verbose :
 	print('host : {}'.format(host))
@@ -69,7 +75,16 @@ snmpTable = SnmpTable(host, community, '{}::{}'.format(mibFile, tableOid))
 if verbose : 
 	snmpTable.verbose = True
 	print('getting table\'s indexes...')
-snmpTable.getIndexes()
+if indexFile :
+	if os.path.isfile(indexFile) :
+		with open (indexFile) as file :
+			indexData = json.loads(file.read())
+			if verbose : 
+				print('index datas loaded !')
+			for key,val in indexData.items() :
+				snmpTable.indexes.append(key)
+else :
+	snmpTable.getIndexes()
 if verbose : 
 	print('getting table\'s columns')
 snmpTable.getColumns()
@@ -87,8 +102,13 @@ if snmpTable.isValid :
 		print('SNMP Table columns : ') 
 		snmpTable.listColumns()
 	if len(columns) > 0 :
-		for col in columns : 
-			snmpTable.getColumnVals(col) 
+		if len(lines) > 0 :
+			for line in lines : 
+				for col in columns :
+					snmpTable.getSpecificVal(col,line) 
+		else :
+			for col in columns : 
+				snmpTable.getColumnVals(col) 
 	else : 
 		print('\n')
 		snmpTable.getAllVals()
@@ -98,6 +118,12 @@ if snmpTable.isValid :
 		snmpTable.csvValues(outputCsv)
 	if outputNagios : 
 		snmpTable.nagiosValues()
+	if outputJson :
+		result = snmpTable.getCollectedValues()
+		with open(outputJson, 'w') as file :
+			file.write(json.dumps(result))
+			if verbose : 
+				print('Json dumps written to {}'.format(outputJson))
 else : 
 	print('Table oid seems to be not found.')
 

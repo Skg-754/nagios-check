@@ -18,7 +18,8 @@ class SnmpTable :
 		self.indexes = []						# the indexes of the snmp table
 		self.values = {}						# the values collected from the snmp table
 		self.verbose = False						# if set to true, print the requests sended to the snmp host
-		
+		self.filter = None	
+	
 		# transform tableOid in numercialOId	
 		request = 'snmptranslate -On {}'.format(self.tableOid)
 		if self.verbose : 
@@ -65,7 +66,7 @@ class SnmpTable :
 				print(request)
 			returnCode, returnMessage = processExec(request)
 			if returnCode != 0 :
-				print('error')
+				print('error while requesting next snmp value on {}'.format(self.tableOid))
 			else : 
 				result = parseSnmpSingleResult(returnMessage)
 				if self.numericalOid in result['columnOid'] :
@@ -83,7 +84,7 @@ class SnmpTable :
 
 	def listColumns (self) :
 		'''
-		Prin the columns name list
+		Print the columns name list
 		'''
 		for column in self.columns : 
 			print(column)
@@ -106,6 +107,28 @@ class SnmpTable :
 					self.values[index] = {}
 				self.values[index][result['columnOid'].split('::')[1]] = result['value'] 
 
+	def getLineVals (self, tableIndex) :
+		'''
+		Collect the values of all the columns for a specific table index
+		'''	
+		print('getLineVals not implemented yet')
+
+	def getSpecificVal (self, column, tableIndex) :
+		'''
+		Collect a specific value for a specific column on a specific table index
+		'''
+		request = 'snmpget -v 2c -c {} {} {}::{}.{}'.format(self.community, self.host, self.mib, column, tableIndex)
+		if self.verbose : 
+			print(request)
+		returnCode, returnMessage = processExec(request)
+		if returnCode != 0 :
+			print('error while requesting next snmp value on {} {}.{}'.format(self.tableOid, column, tableIndex))
+		else : 
+			result = parseSnmpSingleResult(returnMessage)
+			index = result['index']
+			if not index in self.values.keys() :
+				self.values[index] = {}
+			self.values[index][result['columnOid'].split('::')[1]] = result['value'] 
 	
 	def getAllVals (self) :
 		'''
