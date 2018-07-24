@@ -20,7 +20,9 @@ class SnmpTable :
 		self.verbose = False						# if set to true, print the requests sended to the snmp host
 		
 		# transform tableOid in numercialOId	
-		request = 'snmptranslate -On {}'.format(self.tableOid)	
+		request = 'snmptranslate -On {}'.format(self.tableOid)
+		if self.verbose : 
+			print(request)	
 		returnCode, returnMessage = processExec(request)
 		if returnCode != 0 : 
 			print('Error while checking the snmp table oid string.')
