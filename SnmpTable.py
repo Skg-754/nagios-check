@@ -18,7 +18,6 @@ class SnmpTable :
 		self.indexes = []						# the indexes of the snmp table
 		self.values = {}						# the values collected from the snmp table
 		self.verbose = False						# if set to true, print the requests sended to the snmp host
-		self.filter = None	
 	
 		# transform tableOid in numercialOId	
 		request = 'snmptranslate -On {}'.format(self.tableOid)

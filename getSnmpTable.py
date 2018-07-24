@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python3
 
 #####################################
 #
@@ -15,6 +15,7 @@ from SnmpTable import *
 
 import argparse
 import json
+import re
 desc = '''
 '''
 
@@ -53,6 +54,7 @@ tableOid	= args.tableOid
 verbose 	= args.verbose
 indexFile 	= args.indexFile
 indexData	= None
+linesFilter = args.linesFilter
 
 columns 	= args.columns
 lines		= []
@@ -85,6 +87,12 @@ if indexFile :
 				snmpTable.indexes.append(key)
 else :
 	snmpTable.getIndexes()
+if linesFilter : 
+	for key,value in indexData.items() : 
+		for val in value.values() :
+			if re.match(linesFilter, val) : 
+				lines.append(key)
+				print(key)
 if verbose : 
 	print('getting table\'s columns')
 snmpTable.getColumns()
@@ -103,9 +111,9 @@ if snmpTable.isValid :
 		snmpTable.listColumns()
 	if len(columns) > 0 :
 		if len(lines) > 0 :
-			for line in lines : 
-				for col in columns :
-					snmpTable.getSpecificVal(col,line) 
+			for line in lines :
+				for col in columns : 
+					snmpTable.getSpecificVal(col, line)
 		else :
 			for col in columns : 
 				snmpTable.getColumnVals(col) 
