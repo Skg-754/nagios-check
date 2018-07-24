@@ -67,6 +67,7 @@ if verbose :
 	print('creating snmpTable instace....')
 snmpTable = SnmpTable(host, community, '{}::{}'.format(mibFile, tableOid))
 if verbose : 
+	snmpTable.verbose = True
 	print('getting table\'s indexes...')
 snmpTable.getIndexes()
 if verbose : 
