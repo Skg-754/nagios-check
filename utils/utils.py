@@ -22,7 +22,12 @@ def parseSnmpSingleResult(message) :
 	else :
 		result['columnOid'] = result['columnOid'][0]
 	result['index']         = message.split(' = ')[0].split('.').pop()
+
 	result['valueType']     = message.split(' = ')[1].split(': ')[0]
-	result['value']         = message.split(' = ')[1].split(': ')[1]
+	if len(message.split(' = ')[1].split(': ')) > 1 :
+		result['value']         = message.split(' = ')[1].split(': ')[1]
+	else :
+		result['value'] = ""
+	
 	return result
 

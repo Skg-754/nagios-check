@@ -1,5 +1,9 @@
-from utils import processExec, parseSnmpSingleResult
+import sys
 import os
+
+sys.path.insert(0, '../utils')
+from utils import processExec, parseSnmpSingleResult
+
 
 class SnmpTable :
 	'''
@@ -10,14 +14,14 @@ class SnmpTable :
 		Required arguments : snmp host, snmp community, table oid on format mibFile::TableName
 		'''
 		self.host = host						# snmp host
-		self.community = community					# snmp community
-		self.tableOid = tableOid					# table string oid on format mibFile::TableName
-		self.isValid = False						# variable set to true if the oid string is found
+		self.community = community				# snmp community
+		self.tableOid = tableOid				# table string oid on format mibFile::TableName
+		self.isValid = False					# variable set to true if the oid string is found
 		self.columns = []						# columns names of the snmp table
 		self.mib = None							# the mib file name 
 		self.indexes = []						# the indexes of the snmp table
 		self.values = {}						# the values collected from the snmp table
-		self.verbose = False						# if set to true, print the requests sended to the snmp host
+		self.verbose = False					# if set to true, print the requests sended to the snmp host
 	
 		# transform tableOid in numercialOId	
 		request = 'snmptranslate -On {}'.format(self.tableOid)
@@ -146,42 +150,45 @@ class SnmpTable :
 		'''
 		Print the collected values in a formatted array
 		'''
-		headers= list(list(self.values.values())[0].keys())
-		
-		valuesList = list(self.values.values())
-		columnsWidth = {}
-		for header in headers : 
-			columnsWidth[header] = len(header)	
+		if len(self.values.values()) == 0 : 
+			print('no data found')
+		else :
+			headers= list(list(self.values.values())[0].keys())
 			
-		# getting the columns widths
-		for value in valuesList :
-			for key,val in value.items() : 
-				if columnsWidth[key] < len(val) : 
-					columnsWidth[key] = len(val)
-		# building the header
-		headerString = '|'
-		for header in headers :
-			header = header.ljust(columnsWidth[header])
-			headerString = '{} {} |'.format(headerString, header)
+			valuesList = list(self.values.values())
+			columnsWidth = {}
+			for header in headers : 
+				columnsWidth[header] = len(header)	
+				
+			# getting the columns widths
+			for value in valuesList :
+				for key,val in value.items() : 
+					if columnsWidth[key] < len(val) : 
+						columnsWidth[key] = len(val)
+			# building the header
+			headerString = '|'
+			for header in headers :
+				header = header.ljust(columnsWidth[header])
+				headerString = '{} {} |'.format(headerString, header)
 
-		# building line
-		print(''.ljust(len(headerString),'-'))
+			# building line
+			print(''.ljust(len(headerString),'-'))
 
-		print(headerString)
-	
-		# building line
-		print(''.ljust(len(headerString),'-'))
+			print(headerString)
 		
-		# building the data linesi
-		for value in valuesList : 
-			line = '|'
-			for key,val in value.items() :
-				val = val.ljust(columnsWidth[key])
-				line = '{} {} |'.format(line, val)	
-			print(line)	
-		
-		# building line
-		print(''.ljust(len(headerString),'-'))
+			# building line
+			print(''.ljust(len(headerString),'-'))
+			
+			# building the data linesi
+			for value in valuesList : 
+				line = '|'
+				for key,val in value.items() :
+					val = val.ljust(columnsWidth[key])
+					line = '{} {} |'.format(line, val)	
+				print(line)	
+			
+			# building line
+			print(''.ljust(len(headerString),'-'))
 
 	def csvValues (self, fileName) :
 		'''
