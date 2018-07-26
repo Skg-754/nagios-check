@@ -92,7 +92,6 @@ if linesFilter :
 		for val in value.values() :
 			if re.match(linesFilter, val) : 
 				lines.append(key)
-				print(key)
 if verbose : 
 	print('getting table\'s columns')
 snmpTable.getColumns()
