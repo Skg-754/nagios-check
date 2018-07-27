@@ -15,7 +15,11 @@ import sys
 import os
 import time
 
-sys.path.insert(0, '../utils')
+scriptPath = os.path.realpath(__file__)
+scriptFolder = os.path.dirname(scriptPath)
+scriptParentFolder = os.path.dirname(scriptFolder)
+
+sys.path.insert(0, scriptParentFolder+'/utils')
 
 from utils import processExec, parseSnmpSingleResult
 
@@ -31,10 +35,10 @@ parser = argparse.ArgumentParser(description=desc)
 
 parser.add_argument('-H',	'--host', 		    dest='host', 			required=True, 				help='The host IP address')
 parser.add_argument('-u',	'--user', 		    dest='user', 		    required=True, 				help='The SSH user')
-parser.add_argument('-p',	'--password',	    dest='password',	    required=True, 				help='The SSH password')
-parser.add_argument('-f',	'--file-path',	    dest='path',	        required=True, 				help='The path to the status.dat file')
+parser.add_argument('-p',	'--password',		dest='password',	    required=True, 				help='The SSH password')
+parser.add_argument('-f',	'--file-path',	 	dest='path',	        required=True, 				help='The path to the status.dat file')
 parser.add_argument('-mg',	'--general-mode',	dest='generalMode',	    action="store_true", 		help='General mode : print a global status of the remote nagios')
-parser.add_argument('-mh',	'--host-mode',	    dest='hostMode',	    default="", 		        help='Host mode : print a specific host status of the remote nagios')
+parser.add_argument('-mh',	'--host-mode',		dest='hostMode',	    default="", 		        help='Host mode : print a specific host status of the remote nagios')
 parser.add_argument('-ms',	'--service-mode',	dest='serviceMode',	    default="", 		        help='Service mode : print a specific service status of the remote nagios')
 parser.add_argument('-v', 	'--verbose', 		dest='verbose', 		action="store_true",		help='verbose mode')
 
@@ -50,7 +54,7 @@ verbose     = args.verbose
 
 # script globals
 status      = None
-statusFile  = '_status.dat'
+statusFile  = '/tmp/{}_remote_nagios_check_status.dat'.format(host)
 hosts       = {}
 services    = {}
 maxFileAge  = 20
@@ -78,7 +82,7 @@ def getFile () :
     '''
     Getting de status.dat file
     '''
-    request = 'sshpass -p {} scp {}@{}:{} ./{}'.format(password, user, host, path, statusFile)
+    request = 'sshpass -p {} scp {}@{}:{} {}'.format(password, user, host, path, statusFile)
     if verbose : 
         print(request)
     returnCode, returnMessage = processExec(request)
@@ -234,12 +238,12 @@ def generalStatus () :
 
         # updating perfdata
         perfData = "{} '{}_ok'={}".format(perfData, hostName, _ok)
-        perfData = "{} '{}_warning'='{}'".format(perfData, hostName, _warning)
-        perfData = "{} '{}_critical'='{}'".format(perfData, hostName, _critical)
-        perfData = "{} '{}_unknown'='{}'".format(perfData, hostName, _unkown)
-        perfData = "{} '{}_acknowledged'='{}'".format(perfData, hostName, _acknowledged)
+        perfData = "{} '{}_warning'={}".format(perfData, hostName, _warning)
+        perfData = "{} '{}_critical'={}".format(perfData, hostName, _critical)
+        perfData = "{} '{}_unknown'={}".format(perfData, hostName, _unkown)
+        perfData = "{} '{}_acknowledged'={}".format(perfData, hostName, _acknowledged)
 
-
+	
     statusInformation = ''
     statusCode = None
     if critical > 0 :
@@ -314,7 +318,6 @@ def hostStatus (hostName) :
 
                 # updating perfdata
                 perfData = "{} '{}_status'={}".format(perfData, serviceName, state)
-                perfData = "{} '{}_output'='{}'".format(perfData, serviceName, serviceData['plugin_output'])
 
         statusInformation = ''
         statusCode = None
