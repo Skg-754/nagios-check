@@ -164,55 +164,80 @@ def generalStatus () :
     hostsNb = 0
     servicesNb = 0
     critical = 0
-    criticalHosts = []
     warning = 0
-    warningHosts = []
-    unknown = 0
-    unknownHosts = []    
+    unknown = 0 
+    acknowledged = 0
     ok = 0
 
     # host status :                         current_state   plugin_output   performance_data    last_update
     # service status : service_description  current_state   plugin_output   performance_data    last_update
+
+    perfData = ""
+    
     
     for key, hostData in hosts.items() :       
         hostsNb += 1
         hostName = hostData['host_name']
         state = int(hostData['current_state'])
 
+        # host only counter
+        _warning = 0
+        _critical = 0
+        _unkown = 0
+        _ok = 0
+        _acknowledged = 0
+
+        ack = False
+        if int(hostData['problem_has_been_acknowledged']) == 1 :
+            ack = True
+
+        # updating counters
         if state == nagiosStatusCode['WARNING'] :
-            if not hostName in warningHosts :
-                warningHosts.append(hostName)
             warning +=1
+            _warning +=1
         elif state == nagiosStatusCode['CRITICAL'] :
-            if not hostName in criticalHosts :
-                criticalHosts.append(hostName)
             critical += 1
+            _critical += 1
         elif state == nagiosStatusCode['UNKNOWN'] :
-            if not hostName in unknownHosts :
-                unknownHosts.append(hostName)
             unknown +=1
+            _unknown +=1
+        elif ack : 
+            acknowledged += 1
+            _acknowledged +=1
         elif state == nagiosStatusCode['OK'] :
             ok +=1
+            _ok +=1
 
         if hostName in services.keys() :
             for serviceName, serviceData in services[hostName].items() :
                 servicesNb += 1    
                 state = int(serviceData['current_state'])
+                ack = False
+                if int(serviceData['problem_has_been_acknowledged']) == 1 :
+                    ack = True
 
-                if state == nagiosStatusCode['WARNING'] :
-                    if not hostName in warningHosts :
-                        warningHosts.append(hostName)
+                if state == nagiosStatusCode['WARNING'] and not ack :
                     warning +=1
-                elif state == nagiosStatusCode['CRITICAL'] :
-                    if not hostName in criticalHosts :
-                        criticalHosts.append(hostName)
+                    _warning +=1
+                elif state == nagiosStatusCode['CRITICAL'] and not ack :
                     critical += 1
-                elif state == nagiosStatusCode['UNKNOWN'] :
-                    if not hostName in unknownHosts :
-                        unknownHosts.append(hostName)
+                    _critical += 1
+                elif state == nagiosStatusCode['UNKNOWN'] and not ack :
                     unknown +=1
+                    _unknown +=1
+                elif ack : 
+                    acknowledged += 1
+                    _acknowledged +=1
                 elif state == nagiosStatusCode['OK'] :
                     ok +=1
+                    _ok +=1
+
+        # updating perfdata
+        perfData = "{} '{}_ok'={}".format(perfData, hostName, _ok)
+        perfData = "{} '{}_warning'='{}'".format(perfData, hostName, _warning)
+        perfData = "{} '{}_critical'='{}'".format(perfData, hostName, _critical)
+        perfData = "{} '{}_unknown'='{}'".format(perfData, hostName, _unkown)
+        perfData = "{} '{}_acknowledged'='{}'".format(perfData, hostName, _acknowledged)
 
 
     statusInformation = ''
@@ -221,46 +246,39 @@ def generalStatus () :
         statusInformation += 'CRITICAL : '
         statusCode = nagiosStatusCode['CRITICAL']
     elif warning > 0 :
-        statusInformation += 'WARNING : '
+        statusInformation += 'WARNING _ '
         statusCode = nagiosStatusCode['WARNING']
     elif unknown > 0 : 
-        statusInformation += 'UNKOWN : '
+        statusInformation += 'UNKOWN _ '
         statusCode = nagiosStatusCode['UNKOWN']
-    elif ok == hostsNb + servicesNb :
-        statusInformation += 'OK : '
+    elif ok + acknowledged == hostsNb + servicesNb :
+        statusInformation += 'OK _ '
         statusCode = nagiosStatusCode['OK']
     else :
-        statusInformation += 'UNKOWN : '
+        statusInformation += 'UNKOWN _ '
         statusCode = nagiosStatusCode['UNKOWN']
 
-    criticalHosts = str(criticalHosts).replace("["," ").replace("]"," ").replace("'","")
-    warningHosts = str(warningHosts).replace("["," ").replace("]"," ").replace("'","")
-    unknownHosts = str(unknownHosts).replace("["," ").replace("]"," ").replace("'","")
-
-    statusInformation += 'TOTAL HOSTS :{}, TOTAL SERVICES :{}, CRITICAL :{} ({}), WARNING :{} ({}), UNKNOWN :{} ({}), OK : {}'.format(
-        hostsNb, servicesNb, critical, criticalHosts, warning, warningHosts, unknown, unknownHosts, ok)  
+    statusInformation += 'TOTAL HOSTS :{}, TOTAL SERVICES :{}, CRITICAL :{}, WARNING :{}, UNKNOWN :{}, OK : {}, ACKNOWLEDGED : {}'.format(
+        hostsNb, servicesNb, critical, warning, unknown, ok, acknowledged)  
     
-    nagiosOutput(statusCode, statusInformation)
+    nagiosOutput(statusCode, statusInformation, perfData)
 
 def hostStatus (hostName) :
     '''
     Getting the status of an host of the remote nagios
     '''
-    #
-    # Need to refactor
-    #
 
     servicesNb = 0
+    perfData = ''
+
+    # counters
     critical = 0
-    criticalServices = []
     warning = 0
-    warningServices = []
     unknown = 0
-    unknownServices = [] 
     ok = 0
-    okServices = [] 
 
     if hostName in hosts.keys() : 
+
 
         # host verfication
         hostData = hosts[hostName]
@@ -277,53 +295,49 @@ def hostStatus (hostName) :
         
         # service verification
         if hostName in services.keys() :
+
             for serviceName, serviceData in services[hostName].items() :
+
                 servicesNb += 1    
+
                 state = int(serviceData['current_state'])
 
+                # updating counters
                 if state == nagiosStatusCode['WARNING'] :
-                    if not hostName in warningServices :
-                        warningServices.append(serviceName)
                     warning +=1
                 elif state == nagiosStatusCode['CRITICAL'] :
-                    if not hostName in criticalServices :
-                        criticalServices.append(serviceName)
                     critical += 1
                 elif state == nagiosStatusCode['UNKNOWN'] :
-                    if not hostName in unknownServices :
-                        unknownServices.append(serviceName)
                     unknown +=1
                 elif state == nagiosStatusCode['OK'] :
-                    if not hostName in okServices :
-                        okServices.append(serviceName)
-                    ok +=1
+                    ok +=1  
+
+                # updating perfdata
+                perfData = "{} '{}_status'={}".format(perfData, serviceName, state)
+                perfData = "{} '{}_output'='{}'".format(perfData, serviceName, serviceData['plugin_output'])
 
         statusInformation = ''
         statusCode = None
         if critical > 0 :
-            statusInformation += 'CRITICAL : '
+            statusInformation += 'CRITICAL _ '
             statusCode = nagiosStatusCode['CRITICAL']
         elif warning > 0 :
-            statusInformation += 'WARNING : '
+            statusInformation += 'WARNING _ '
             statusCode = nagiosStatusCode['WARNING']
         elif unknown > 0 : 
-            statusInformation += 'UNKOWN : '
+            statusInformation += 'UNKOWN _ '
             statusCode = nagiosStatusCode['UNKOWN']
         elif ok == servicesNb +1 :
-            statusInformation += 'OK : '
+            statusInformation += 'OK _ '
             statusCode = nagiosStatusCode['OK']
         else :
-            statusInformation += 'UNKOWN : '
+            statusInformation += 'UNKOWN _ '
             statusCode = nagiosStatusCode['UNKOWN']
 
-        criticalServices = str(criticalServices).replace("["," ").replace("]"," ").replace("'","")
-        warningServices = str(warningServices).replace("["," ").replace("]"," ").replace("'","")
-        unknownServices = str(unknownServices).replace("["," ").replace("]"," ").replace("'","")
+        statusInformation += 'HOST :{}, SERVICES :{}, CRITICAL :{}, WARNING :{}, UNKNOWN :{}, OK : {}'.format(
+            hostName, servicesNb, critical, warning, unknown, ok)  
 
-        statusInformation += 'HOST :{}, SERVICES :{}, CRITICAL :{} ({}), WARNING :{} ({}), UNKNOWN :{} ({}), OK : {}'.format(
-            hostName, servicesNb, critical, criticalServices, warning, warningServices, unknown, unknownServices, ok)  
-        
-        nagiosOutput(statusCode, statusInformation)
+        nagiosOutput(statusCode, statusInformation, perfData)
         
     else :
         statusCode = nagiosStatusCode['UNKNOWN']
